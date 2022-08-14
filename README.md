@@ -1,8 +1,8 @@
-# logarithm
+# Math algorithms in rust
 Rust implementation of different math algorithms
 
-# performance
-## ln
+# Performance
+## ln()
 ![image](https://user-images.githubusercontent.com/20506/184529705-df6121f2-b6ae-4318-8f7c-ffb81af04956.png)
 ![image](https://user-images.githubusercontent.com/20506/184529716-1669ebc2-03c8-499a-ae8e-af58c2bdc7d0.png)
 ```
