@@ -1,5 +1,5 @@
 # Math algorithms in rust
-Rust implementation of different math algorithms
+Rust implementation of different math algorithms with fixed point numbers
 
 # Performance
 ## ln()
