@@ -22,6 +22,14 @@ fn bench_ln(c: &mut Criterion) {
                 b.iter(|| fixed_point.ln());
             },
         );
+
+        group.bench_with_input(
+            BenchmarkId::new("table lookup", parameter),
+            &fixed_point,
+            |b, _s| {
+                b.iter(|| fixed_point.ln_tables());
+            },
+        );
     }
     group.finish();
 }

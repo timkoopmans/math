@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 checked_decimal_macro = "0.1.4"
+ndarray = "0.15.4"
 
 [dev-dependencies]
 criterion = "0.3.6"
