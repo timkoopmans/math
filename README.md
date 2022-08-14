@@ -1,3 +1,4 @@
+![image](https://user-images.githubusercontent.com/20506/184532276-7940302e-ed83-4446-bfbe-53e84326f363.png)
 # Math algorithms in rust
 Rust implementation of different math algorithms, to be used on chain with fixed point decimals (fixed number of digits after the decimal point).
 
@@ -11,7 +12,7 @@ Additional Statistics:
 Slope	        538.52 ns	        543.67 ns	        549.11 ns
 R²	            0.9064666	        0.9135377	        0.9056421
 Mean	        536.44 ns	        538.51 ns	        540.94 ns
-Sdev.	        7.1136 ns	        11.497 ns	        15.150 ns
+Stdev.	        7.1136 ns	        11.497 ns	        15.150 ns
 Median	        533.93 ns	        534.68 ns	        535.85 ns
 MAD	            2.7129 ns	        3.7816 ns	        5.0946 ns
 ```
