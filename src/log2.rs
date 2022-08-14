@@ -2,7 +2,7 @@ use crate::decimal::FixedPoint;
 use checked_decimal_macro::*;
 
 impl FixedPoint {
-    pub fn log2(self) -> Option<(u128, bool)> {
+    pub fn log2(self) -> Option<(Self, bool)> {
         let mut x: u128 = self.get();
 
         assert!(x > 0, "must be greater than zero");
@@ -25,7 +25,7 @@ impl FixedPoint {
 
         // if y = 1, then the algorithm is done, and the fractional part is zero
         if y == scale {
-            return Some((result, negative))
+            return Some((FixedPoint::new(result), negative))
         }
 
         // calculate fractional part via iterative approximation.
@@ -47,7 +47,7 @@ impl FixedPoint {
             z >>= 1;
         }
 
-        Some((result, negative))
+        Some((FixedPoint::new(result), negative))
     }
 }
 
@@ -58,12 +58,12 @@ mod tests {
 
     #[test]
     fn test_log2() {
-        let decimal = FixedPoint::new(2250000000000);
+        let decimal = FixedPoint::new(2250000000000); // 2.25
 
         let actual = decimal.log2();
 
-        // 1.1699250014423123629074778878956330175196288153849621209115
-        let expected = Some((1_169925001434, false));
+        // log2(2.25) = 1.1699250014423123629074778878956330175196288153849621209115
+        let expected = Some((FixedPoint::new(1_169925001434), false));
         assert_eq!(actual, expected);
     }
 }
