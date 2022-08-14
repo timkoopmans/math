@@ -66,5 +66,4 @@ mod tests {
         let expected = Some((1_169925001434, false));
         assert_eq!(actual, expected);
     }
-
 }
