@@ -21,12 +21,37 @@ mod tests {
 
     #[test]
     fn test_ln() {
-        let decimal = FixedPoint::new(2250000000000);
+        //  with integer and fractional digits
+        {
+            let decimal = FixedPoint::new(2250000000000);
 
-        let actual = decimal.ln();
+            let actual = decimal.ln();
 
-        // 0.8109302162163287639560262309286982731439808469249883952280
-        let expected = Some(810930216211);
-        assert_eq!(actual, expected);
+            // 0.8109302162163287639560262309286982731439808469249883952280
+            let expected = Some(810930216211);
+            assert_eq!(actual, expected);
+        }
+
+        //  with fractional digits only
+        {
+            let decimal = FixedPoint::new(810930216211);
+
+            let actual = decimal.ln();
+
+            // -0.209573275164505847614143429005277100396934915004957131195
+            let expected = Some(209573275158);
+            assert_eq!(actual, expected);
+        }
+
+        // with very small fractional digits only
+        {
+            let decimal = FixedPoint::new(1);
+
+            let actual = decimal.ln();
+
+            // -27.63102111592854820821589745621237049121321786354527571239
+            let expected = Some(27_631021115941);
+            assert_eq!(actual, expected);
+        }
     }
 }
