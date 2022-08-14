@@ -1,3 +1,5 @@
+![image](https://user-images.githubusercontent.com/20506/184532276-7940302e-ed83-4446-bfbe-53e84326f363.png)
+
 # Math algorithms in rust
 Rust implementation of different math algorithms with fixed point numbers
 
