@@ -7,3 +7,10 @@ edition = "2021"
 
 [dependencies]
 checked_decimal_macro = "0.1.4"
+
+[dev-dependencies]
+criterion = "0.3.6"
+
+[[bench]]
+name = "ln_benchmark"
+harness = false
