@@ -63,12 +63,20 @@ mod tests {
 
     #[test]
     fn test_log10() {
-        let decimal = FixedPoint::new(1_100000000000); // 1.1
-
-        let actual = decimal.log10();
-
         // log10(1.1) = 0.0413926851582250407501999712430242417067021904664530945965390186...
-        let expected = Some((FixedPoint::new(41392685156u128), false));
-        assert_eq!(actual, expected);
+        {
+            let decimal = FixedPoint::new(1_100000000000); // 1.1
+            let actual = decimal.log10();
+            let expected = Some((FixedPoint::new(41392685156u128), false));
+            assert_eq!(actual, expected);
+        }
+
+        // log10(18446744.073709551615) = 7.26591972249479649366...
+        {
+            let decimal = FixedPoint::new(u64::MAX as u128); // 18446744073709551615
+            let actual = decimal.log10();
+            let expected = Some((FixedPoint::new(7_265919722493u128), false));
+            assert_eq!(actual, expected);
+        }
     }
 }

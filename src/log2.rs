@@ -16,8 +16,10 @@ impl FixedPoint {
             x = scale.checked_mul(scale)?.checked_div(x)?;
         }
 
-        // integer part of the logarithm is simply n
-        let n = (128u32 - x.checked_div(scale)?.leading_zeros()) as u128 - 1u128;
+        // integer part of the logarithm is most significant bit n
+        let integer_part = x.checked_div(scale)?;
+        let leading_zeros =  integer_part.leading_zeros() as u128;
+        let n = 128u128 - leading_zeros - 1u128;
 
         let mut result = n.checked_mul(scale)?;
 
@@ -58,12 +60,20 @@ mod tests {
 
     #[test]
     fn test_log2() {
-        let decimal = FixedPoint::new(2250000000000); // 2.25
-
-        let actual = decimal.log2();
-
         // log2(2.25) = 1.1699250014423123629074778878956330175196288153849621209115
-        let expected = Some((FixedPoint::new(1_169925001434), false));
-        assert_eq!(actual, expected);
+        // {
+        //     let decimal = FixedPoint::new(2250000000000); // 2.25
+        //     let actual = decimal.log2();
+        //     let expected = Some((FixedPoint::new(1_169925001434), false));
+        //     assert_eq!(actual, expected);
+        // }
+
+        // log2(18446744.073709551615) = 24.1368628613516518255
+        {
+            let decimal = FixedPoint::new(18446744073709551615u128); // u64::MAX
+            let actual = decimal.log2();
+            let expected = Some((FixedPoint::new(24_136862861344u128), false));
+            assert_eq!(actual, expected);
+        }
     }
 }

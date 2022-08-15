@@ -1,7 +1,7 @@
 use crate::decimal::FixedPoint;
 use crate::decimal::Integer;
 use checked_decimal_macro::*;
-use std::ops::{Div, Mul, Sub, Add};
+use std::ops::{Div, Mul, Add};
 use ndarray::{arr2, Array2};
 
 impl FixedPoint {
@@ -268,11 +268,13 @@ mod tests {
         let d = FixedPoint::new(0);
         let (bit_length, negative) = d.bit_length().unwrap();
         assert_eq!(bit_length, Integer::new(0));
+        assert_eq!(negative, false);
 
         // 10 bit length == 3
         let d = FixedPoint::from_integer(10);
         let (bit_length, negative) = d.bit_length().unwrap();
         assert_eq!(bit_length, Integer::new(3));
+        assert_eq!(negative, false);
 
         // 0.900000000000 bit length == -1
         let d = FixedPoint::new(900000000000);
@@ -295,7 +297,7 @@ mod tests {
         // 18446744073709551615 bit length == 64
         let d = FixedPoint::new(18446744073709551615);
         let (bit_length, negative) = d.bit_length().unwrap();
-        assert_eq!(bit_length, Integer::new(64));
+        assert_eq!(bit_length, Integer::new(24));
         assert_eq!(negative, false);
     }
 
