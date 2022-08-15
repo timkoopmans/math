@@ -1,4 +1,5 @@
 use crate::decimal::FixedPoint;
+use crate::decimal::Integer;
 use checked_decimal_macro::*;
 use std::ops::{Div, Mul, Sub, Add};
 use ndarray::{arr2, Array2};
@@ -14,7 +15,6 @@ impl FixedPoint {
         let ln_2_decimal = FixedPoint::new(693_147_180_559u128);
         let (bit_length_decimal, _negative) = self.bit_length()?;
         let b = bit_length_decimal.get() as u32;
-        let b = 1u32;
         let max = FixedPoint::new(2u128.pow(b).checked_mul(scale)?);
 
         let (s_0, t_0, lx_0) = self.log_table_value(self, max, 0);
@@ -55,24 +55,21 @@ impl FixedPoint {
                   .add(lx_sum_decimal), false))
     }
 
-    fn bit_length(self) -> Option<(Self, bool)> {
-        let x: u128 = self.get();
-
-        assert!(x > 0, "must be greater than zero");
-
-        let scale: u128 = 10u128.checked_pow(FixedPoint::scale() as u32)?;
-
-        if x == 0 {
-            return Some((FixedPoint::new(0), false));
+    pub fn bit_length(self) -> Option<(Integer, bool)> {
+        if self.get() == 0 {
+            return Some((Integer::new(0), false));
         }
 
-        let value: f64 = x as f64;
-        let log_value_div_log_two = value.log(2.0);
+        let (log10, neg_num) = self.log10()?;
+        let (log10_2, neg_den) = FixedPoint::from_integer(2).log10()?;
+        let negative = neg_num != neg_den;
 
-        let value = log_value_div_log_two.abs();
-        let negative = log_value_div_log_two.is_sign_negative();
-
-        let value = FixedPoint::new(value as u128);
+        // int(log10(x)/log10(2))
+        let value = if negative {
+            Integer::from_decimal_up(log10.div(log10_2))
+        } else {
+            Integer::from_decimal(log10.div(log10_2))
+        };
 
         Some((value, negative))
     }
@@ -262,8 +259,45 @@ impl FixedPoint {
 
 #[cfg(test)]
 mod tests {
-    use crate::decimal::FixedPoint;
+    use crate::decimal::{FixedPoint, Integer};
     use checked_decimal_macro::*;
+
+    #[test]
+    fn test_bit_length() {
+        // // 0 bit length == 0
+        // let d = FixedPoint::new(0);
+        // let (bit_length, negative) = d.bit_length().unwrap();
+        // assert_eq!(bit_length, Integer::new(0));
+        //
+        // // 10 bit length == 3
+        // let d = FixedPoint::from_integer(10);
+        // let (bit_length, negative) = d.bit_length().unwrap();
+        // assert_eq!(bit_length, Integer::new(3));
+        //
+        // // 0.900000000000 bit length == -1
+        // let d = FixedPoint::new(900000000000);
+        // let (bit_length, negative) = d.bit_length().unwrap();
+        // assert_eq!(bit_length, Integer::new(1));
+        // assert_eq!(negative, true);
+        //
+        // // 0.01 bit length == -7
+        // let d = FixedPoint::from_scale(1, 2);
+        // let (bit_length, negative) = d.bit_length().unwrap();
+        // assert_eq!(bit_length, Integer::new(7));
+        // assert_eq!(negative, true);
+        //
+        // // 0.000001 bit length == -20
+        // let d = FixedPoint::from_scale(1, 6);
+        // let (bit_length, negative) = d.bit_length().unwrap();
+        // assert_eq!(bit_length, Integer::new(20));
+        // assert_eq!(negative, true);
+
+        // 18446744073709551615 bit length == 64
+        let d = FixedPoint::new(18446744073709551615);
+        let (bit_length, negative) = d.bit_length().unwrap();
+        assert_eq!(bit_length, Integer::new(64));
+        assert_eq!(negative, false);
+    }
 
     #[test]
     fn test_ln_tables() {
