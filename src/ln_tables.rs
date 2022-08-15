@@ -264,33 +264,33 @@ mod tests {
 
     #[test]
     fn test_bit_length() {
-        // // 0 bit length == 0
-        // let d = FixedPoint::new(0);
-        // let (bit_length, negative) = d.bit_length().unwrap();
-        // assert_eq!(bit_length, Integer::new(0));
-        //
-        // // 10 bit length == 3
-        // let d = FixedPoint::from_integer(10);
-        // let (bit_length, negative) = d.bit_length().unwrap();
-        // assert_eq!(bit_length, Integer::new(3));
-        //
-        // // 0.900000000000 bit length == -1
-        // let d = FixedPoint::new(900000000000);
-        // let (bit_length, negative) = d.bit_length().unwrap();
-        // assert_eq!(bit_length, Integer::new(1));
-        // assert_eq!(negative, true);
-        //
-        // // 0.01 bit length == -7
-        // let d = FixedPoint::from_scale(1, 2);
-        // let (bit_length, negative) = d.bit_length().unwrap();
-        // assert_eq!(bit_length, Integer::new(7));
-        // assert_eq!(negative, true);
-        //
-        // // 0.000001 bit length == -20
-        // let d = FixedPoint::from_scale(1, 6);
-        // let (bit_length, negative) = d.bit_length().unwrap();
-        // assert_eq!(bit_length, Integer::new(20));
-        // assert_eq!(negative, true);
+        // 0 bit length == 0
+        let d = FixedPoint::new(0);
+        let (bit_length, negative) = d.bit_length().unwrap();
+        assert_eq!(bit_length, Integer::new(0));
+
+        // 10 bit length == 3
+        let d = FixedPoint::from_integer(10);
+        let (bit_length, negative) = d.bit_length().unwrap();
+        assert_eq!(bit_length, Integer::new(3));
+
+        // 0.900000000000 bit length == -1
+        let d = FixedPoint::new(900000000000);
+        let (bit_length, negative) = d.bit_length().unwrap();
+        assert_eq!(bit_length, Integer::new(1));
+        assert_eq!(negative, true);
+
+        // 0.01 bit length == -7
+        let d = FixedPoint::from_scale(1, 2);
+        let (bit_length, negative) = d.bit_length().unwrap();
+        assert_eq!(bit_length, Integer::new(7));
+        assert_eq!(negative, true);
+
+        // 0.000001 bit length == -20
+        let d = FixedPoint::from_scale(1, 6);
+        let (bit_length, negative) = d.bit_length().unwrap();
+        assert_eq!(bit_length, Integer::new(20));
+        assert_eq!(negative, true);
 
         // 18446744073709551615 bit length == 64
         let d = FixedPoint::new(18446744073709551615);
