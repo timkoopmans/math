@@ -322,12 +322,12 @@ mod tests {
     fn test_ln_tables() {
         //  with integer and fractional digits
         // ln(2.25) = 0.8109302162163287639560262309286982731439808469249883952280
-        // {
-        //     let decimal = FixedPoint::new(2250000000000u128);
-        //     let actual = decimal.ln_tables();
-        //     let expected = Some((FixedPoint::new(810930216138u128), false));
-        //     assert_eq!(actual, expected);
-        // }
+        {
+            let decimal = FixedPoint::new(2250000000000u128);
+            let actual = decimal.ln_tables();
+            let expected = Some((FixedPoint::new(810930216138u128), false));
+            assert_eq!(actual, expected);
+        }
 
         //  with fractional digits only
         // ln(0.810930216138) = -0.209573275254525923995526530250450021440003921493434432564204599
