@@ -1,5 +1,5 @@
-use crate::decimal::FixedPoint;
-use crate::decimal::Integer;
+use crate::fixed_point::FixedPoint;
+use crate::fixed_point::Integer;
 use checked_decimal_macro::*;
 use std::ops::{Div, Mul, Add, Sub};
 use ndarray::{arr2, Array2};
@@ -276,7 +276,7 @@ impl FixedPoint {
 
 #[cfg(test)]
 mod tests {
-    use crate::decimal::{FixedPoint, Integer};
+    use crate::fixed_point::{FixedPoint, Integer};
     use checked_decimal_macro::*;
     use proptest::prelude::*;
 

@@ -1,4 +1,4 @@
-pub mod decimal;
+pub mod fixed_point;
 pub mod ln;
 pub mod square;
 pub mod msb;
