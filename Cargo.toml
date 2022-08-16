@@ -16,3 +16,7 @@ proptest = { version = "1.0.0" }
 [[bench]]
 name = "ln_benchmark"
 harness = false
+
+[[bench]]
+name = "msb_benchmark"
+harness = false
