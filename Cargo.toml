@@ -8,6 +8,9 @@ edition = "2021"
 [dependencies]
 checked_decimal_macro = "0.1.4"
 ndarray = "0.15.4"
+thiserror = "1.0.24"
+num-traits = "0.2.15"
+uint = "0.9"
 
 [dev-dependencies]
 criterion = "0.3.6"
