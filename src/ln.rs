@@ -18,6 +18,7 @@ impl FixedPoint {
 mod tests {
     use crate::decimal::FixedPoint;
     use checked_decimal_macro::*;
+    use proptest::prelude::*;
 
     #[test]
     fn test_ln() {
@@ -46,6 +47,31 @@ mod tests {
             let actual = decimal.ln();
             let expected = Some((FixedPoint::new(27_631021115941u128), true));
             assert_eq!(actual, expected);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_full_u64_range_ln(
+            x in 1..u64::MAX, // 0.000000001 .. 18,446,744,073.709551615
+        ) {
+            let scale: f64 = 9.0; // decimal places
+            let precision = 2; // accuracy +/- 0.000001
+            let x_decimal = FixedPoint::from_integer(x as u128);
+            let x_f64: f64 = x_decimal.get() as f64;
+            let den_f64: f64 = 10f64.powf(scale);
+
+            {
+                let ln_f64 = x_f64.ln();
+                let ln_f64_negative = ln_f64.is_sign_negative();
+                let ln_f64_u128 = (((ln_f64 * den_f64).round() / den_f64) * den_f64) as u128;
+                let (ln_decimal, ln_decimal_negative) = x_decimal.ln().unwrap();
+                let ln_decimal_u128 = ln_decimal.get();
+                let difference = ln_f64_u128.saturating_sub(ln_decimal_u128).lt(&precision);
+
+                assert_eq!(ln_decimal_negative, ln_f64_negative);
+                assert!(difference, "ln compare\n{}\n{}\n{}", ln_f64_u128, ln_decimal_u128, x_decimal);
+            }
         }
     }
 }
