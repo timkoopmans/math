@@ -1,4 +1,4 @@
-use crate::decimal::FixedPoint;
+use crate::fixed_point::FixedPoint;
 use checked_decimal_macro::*;
 use std::ops::Div;
 
@@ -16,7 +16,7 @@ impl FixedPoint {
 
 #[cfg(test)]
 mod tests {
-    use crate::decimal::FixedPoint;
+    use crate::fixed_point::FixedPoint;
     use checked_decimal_macro::*;
     use proptest::prelude::*;
 

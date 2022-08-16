@@ -1,4 +1,4 @@
-use crate::decimal::FixedPoint;
+use crate::fixed_point::FixedPoint;
 use checked_decimal_macro::BigOps;
 
 impl FixedPoint {
@@ -9,7 +9,7 @@ impl FixedPoint {
 
 #[cfg(test)]
 mod tests {
-    use crate::decimal::FixedPoint;
+    use crate::fixed_point::FixedPoint;
     use checked_decimal_macro::*;
 
     #[test]

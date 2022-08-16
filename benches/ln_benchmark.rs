@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use logarithm::decimal::FixedPoint;
+use logarithm::fixed_point::FixedPoint;
 use checked_decimal_macro::*;
 
 criterion_group!(
