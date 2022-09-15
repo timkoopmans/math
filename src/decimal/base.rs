@@ -1,5 +1,6 @@
+use crate::decimal::core::uint::U192;
 use crate::decimal::ops::{DivUp, MulUp, Sub};
-use crate::decimal::errors::DecimalError;
+use crate::decimal::errors::ErrorCode;
 use num_traits::FromPrimitive;
 use std::cmp::Ordering;
 use std::fmt;
@@ -8,6 +9,23 @@ use thiserror::Error;
 
 /// Internal scale used for high precision compute operations
 pub const COMPUTE_SCALE: u8 = 12;
+pub const BIG_COMPUTE_SCALE: u8 = 18;
+
+/// Constants for compute scale
+pub const ZERO_POINT_TWO_FIVE: u128 = 250_000_000_000;
+pub const ZERO_POINT_FIVE: u128 = 500_000_000_000;
+pub const ONE: u128 = 1_000_000_000_000;
+pub const ONE_POINT_TWO_FIVE: u128 = 1_250_000_000_000;
+pub const ONE_POINT_FIVE: u128 = 1_500_000_000_000;
+pub const TWO: u128 = 2_000_000_000_000;
+
+pub const BIG_ZERO: [u64; 3] = [0, 0, 0];
+pub const BIG_ZERO_POINT_TWO_FIVE: [u64; 3] = [250000000000000000, 0, 0];
+pub const BIG_ZERO_POINT_FIVE: [u64; 3] = [500000000000000000, 0, 0];
+pub const BIG_ONE: [u64; 3] = [1000000000000000000, 0, 0];
+pub const BIG_ONE_POINT_TWO_FIVE: [u64; 3] = [1250000000000000000, 0, 0];
+pub const BIG_ONE_POINT_FIVE: [u64; 3] = [1500000000000000000, 0, 0];
+pub const BIG_TWO: [u64; 3] = [2000000000000000000, 0, 0];
 
 /// [Decimal] representation of a number with a value, scale (precision in terms of number of decimal places
 /// and a negative boolean to handle signed arithmetic.
@@ -16,6 +34,144 @@ pub struct Decimal {
     pub value: u128,
     pub scale: u8,
     pub negative: bool,
+}
+
+/// [BigDecimal] representation of a number with a value, scale (precision in terms of number of decimal places
+/// and a negative boolean to handle signed arithmetic.
+#[derive(Default, Clone, Copy, PartialEq, PartialOrd, Debug)]
+pub struct BigDecimal {
+    pub value: U192,
+    pub scale: u8,
+    pub negative: bool,
+}
+
+impl BigDecimal {
+    pub fn new(value: U192, scale: u8, negative: bool) -> Self {
+        Self {
+            value,
+            scale,
+            negative,
+        }
+    }
+
+    pub fn zero() -> Self {
+        Self {
+            value: U192(BIG_ZERO),
+            scale: BIG_COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn zero_point_two_five() -> Self {
+        Self {
+            value: U192(BIG_ZERO_POINT_TWO_FIVE),
+            scale: BIG_COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn zero_point_five() -> Self {
+        Self {
+            value: U192(BIG_ZERO_POINT_FIVE),
+            scale: BIG_COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn one() -> Self {
+        Self {
+            value: U192(BIG_ONE),
+            scale: BIG_COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn one_point_two_five() -> Self {
+        Self {
+            value: U192(BIG_ONE_POINT_TWO_FIVE),
+            scale: BIG_COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn one_point_five() -> Self {
+        Self {
+            value: U192(BIG_ONE_POINT_FIVE),
+            scale: BIG_COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn two() -> Self {
+        Self {
+            value: U192(BIG_TWO),
+            scale: BIG_COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    /// Create a [BigDecimal] from an unsigned big integer, assumed positive by default.
+    pub fn from_u192(integer: U192) -> Self {
+        BigDecimal {
+            value: integer,
+            scale: 0,
+            ..BigDecimal::default()
+        }
+    }
+
+    /// Create a [BigDecimal] from an unsigned integer, assumed positive by default.
+    pub fn from_u128(integer: u128) -> Self {
+        BigDecimal {
+            value: U192::try_from(integer).unwrap_or_else(|_| {
+                panic!("decimal: value does not fit in BigDecimal::from_u128()")
+            }),
+            scale: 0,
+            ..BigDecimal::default()
+        }
+    }
+
+    /// Show the scale of a [BigDecimal] expressed as a power of 10.
+    pub fn denominator(self) -> U192 {
+        U192::from(10u128.pow(self.scale.into()))
+    }
+
+    /// Modify the scale (precision) of a [BigDecimal] to a different scale.
+    pub fn to_scale(self, scale: u8) -> Self {
+        Self {
+            value: match self.scale.cmp(&scale) {
+                Ordering::Equal => self.value,
+                Ordering::Greater => self
+                    .value
+                    .checked_div(U192::from(
+                        10u128.pow((self.scale.checked_sub(scale).unwrap()).into()),
+                    ))
+                    .expect("scaled_down"),
+                _ => self
+                    .value
+                    .checked_mul(U192::from(
+                        10u128.pow((scale.checked_sub(self.scale).unwrap()).into()),
+                    ))
+                    .expect("scaled_up"),
+            },
+            scale,
+            negative: self.negative,
+        }
+    }
+
+    /// Convert to a higher precision compute scale
+    pub fn to_compute_scale(self) -> Self {
+        self.to_scale(BIG_COMPUTE_SCALE)
+    }
+
+    /// Returns true if [BigDecimal] is positive and false if the number is zero or negative.
+    pub fn is_positive(self) -> bool {
+        !self.negative && !self.value.is_zero()
+    }
+
+    /// Returns true if [BigDecimal] is negative and false if the number is zero or positive.
+    pub fn is_negative(self) -> bool {
+        self.negative && !self.value.is_zero()
+    }
 }
 
 impl Decimal {
@@ -28,16 +184,60 @@ impl Decimal {
         }
     }
 
-    pub fn zero() -> Decimal {
-        Decimal::from_u64(0).to_compute_scale()
+    pub fn zero() -> Self {
+        Self {
+            value: 0,
+            scale: COMPUTE_SCALE,
+            negative: false,
+        }
     }
 
-    pub fn one() -> Decimal {
-        Decimal::from_u64(1).to_compute_scale()
+    pub fn zero_point_two_five() -> Self {
+        Self {
+            value: ZERO_POINT_TWO_FIVE,
+            scale: COMPUTE_SCALE,
+            negative: false,
+        }
     }
 
-    pub fn two() -> Decimal {
-        Decimal::from_u64(2).to_compute_scale()
+    pub fn zero_point_five() -> Self {
+        Self {
+            value: ZERO_POINT_FIVE,
+            scale: COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn one() -> Self {
+        Self {
+            value: ONE,
+            scale: COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn one_point_two_five() -> Self {
+        Self {
+            value: ONE_POINT_TWO_FIVE,
+            scale: COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn one_point_five() -> Self {
+        Self {
+            value: ONE_POINT_FIVE,
+            scale: COMPUTE_SCALE,
+            negative: false,
+        }
+    }
+
+    pub fn two() -> Self {
+        Self {
+            value: TWO,
+            scale: COMPUTE_SCALE,
+            negative: false,
+        }
     }
 
     /// Create a [Decimal] from an unsigned integer, assumed positive by default.
@@ -133,6 +333,14 @@ impl Decimal {
         10u128.pow(self.scale.into())
     }
 
+    /// Returns bit length of [Decimal] u128 value.
+    pub fn bit_length(self) -> u32 {
+        match 128u32.checked_sub(self.value.leading_zeros()) {
+            Some(bit_length) => bit_length,
+            None => panic!("decimal: overflow in Decimal bit_length"),
+        }
+    }
+
     /// Returns true if [Decimal] is positive and false if the number is zero or negative.
     pub fn is_positive(self) -> bool {
         !self.negative && !self.is_zero()
@@ -160,9 +368,9 @@ impl Decimal {
     /// Leading and trailing whitespace represent an error.
     /// Digits are a subset of these characters, depending on radix.
     /// This function panics if radix is not in the range base 10.
-    fn from_str_radix(s: &str, radix: u32) -> Result<Decimal, DecimalError> {
+    fn from_str_radix(s: &str, radix: u32) -> Result<Decimal, ErrorCode> {
         if radix != 10 {
-            return Err(DecimalError::ParseErrorBase10);
+            return Err(ErrorCode::ParseErrorBase10);
         }
 
         let exp_separator: &[_] = &['e', 'E'];
@@ -181,7 +389,7 @@ impl Decimal {
         };
 
         if base.is_empty() {
-            return Err(DecimalError::ParseErrorEmpty);
+            return Err(ErrorCode::ParseErrorEmpty);
         }
 
         // look for signed (negative) decimals
@@ -193,7 +401,7 @@ impl Decimal {
                     (String::from(&base[1..]), true)
                 } else {
                     // negative sign not in the first position
-                    return Err(DecimalError::ParseError);
+                    return Err(ErrorCode::ParseError);
                 }
             }
         };
@@ -229,7 +437,7 @@ impl Decimal {
                 0,
                 negative,
             )
-            .to_scale(exp.abs() as u8))
+                .to_scale(exp.abs() as u8))
         } else {
             Ok(Decimal::new(
                 u128::from_str_radix(&digits, radix).unwrap(),
@@ -287,11 +495,34 @@ impl From<Decimal> for i32 {
     }
 }
 
+impl From<Decimal> for BigDecimal {
+    fn from(decimal: Decimal) -> BigDecimal {
+        BigDecimal {
+            value: U192::from(decimal.value),
+            scale: decimal.scale,
+            negative: decimal.negative,
+        }
+    }
+}
+
+impl From<BigDecimal> for Decimal {
+    fn from(big_decimal: BigDecimal) -> Decimal {
+        Decimal {
+            value: big_decimal
+                .value
+                .try_into()
+                .unwrap_or_else(|_| panic!("decimal: value does not fit in BigDecimal::from()")),
+            scale: big_decimal.scale,
+            negative: big_decimal.negative,
+        }
+    }
+}
+
 impl FromStr for Decimal {
-    type Err = DecimalError;
+    type Err = ErrorCode;
 
     #[inline]
-    fn from_str(s: &str) -> Result<Decimal, DecimalError> {
+    fn from_str(s: &str) -> Result<Decimal, ErrorCode> {
         Decimal::from_str_radix(s, 10)
     }
 }
@@ -332,8 +563,9 @@ impl fmt::Display for Decimal {
 
 #[cfg(test)]
 mod test {
+    use crate::decimal::core::uint::U192;
     use crate::decimal::ops::{Add, Div, DivUp, Mul, Pow, Sqrt, Sub};
-    use crate::decimal::Decimal;
+    use crate::decimal::{BigDecimal, Decimal};
     use proptest::prelude::*;
     use std::str::FromStr;
 
@@ -349,6 +581,7 @@ mod test {
                 scale: 6,
                 negative: false,
             };
+
             assert_eq!(actual, expected)
         }
         {
@@ -363,8 +596,7 @@ mod test {
                 negative: false,
             };
 
-            assert_eq!({ actual.value }, { expected.value });
-            assert_eq!(actual.scale, expected.scale);
+            assert_eq!(actual, expected);
 
             // 2/3 = 0.666667 rounded up
             let a = Decimal::from_u64(2).to_scale(6);
@@ -377,8 +609,7 @@ mod test {
                 negative: false,
             };
 
-            assert_eq!({ actual.value }, { expected.value });
-            assert_eq!(actual.scale, expected.scale);
+            assert_eq!(actual, expected);
 
             // 2/3 = 0.666666 truncated (default)
             let a = Decimal::from_u64(2).to_scale(6);
@@ -391,8 +622,7 @@ mod test {
                 negative: false,
             };
 
-            assert_eq!({ actual.value }, { expected.value });
-            assert_eq!(actual.scale, expected.scale);
+            assert_eq!(actual, expected);
         }
     }
 
@@ -463,6 +693,7 @@ mod test {
 
     #[test]
     fn test_new() {
+        // Decimal
         {
             let value = 42;
             let scale = 3;
@@ -473,8 +704,20 @@ mod test {
                 negative: false,
             };
 
-            assert_eq!({ actual.value }, { expected.value });
-            assert_eq!(actual.scale, expected.scale);
+            assert_eq!(actual, expected);
+        }
+
+        // BigDecimal
+        {
+            let value = U192::from(u128::MAX);
+            let scale = 3;
+            let actual = BigDecimal::new(value, scale, false);
+            let expected = BigDecimal {
+                value,
+                scale,
+                negative: false,
+            };
+            assert_eq!(actual, expected);
         }
     }
 
@@ -491,6 +734,42 @@ mod test {
             let decimal = Decimal::new(42, 0, false);
             let actual = decimal.denominator();
             let expected = 1;
+
+            assert_eq!(actual, expected);
+        }
+    }
+
+    #[test]
+    fn test_bit_length() {
+        // 42 = 101010 = 6
+        {
+            let decimal = Decimal::new(42, 2, false);
+            let actual = decimal.bit_length();
+            let expected = 6;
+            assert_eq!(actual, expected);
+        }
+
+        // u64::MAX = 64
+        {
+            let decimal = Decimal::new(u64::MAX as u128, 2, false);
+            let actual = decimal.bit_length();
+            let expected = 64;
+            assert_eq!(actual, expected);
+        }
+
+        // u64::MAX >> 1 = 63
+        {
+            let decimal = Decimal::new((u64::MAX >> 1) as u128, 2, false);
+            let actual = decimal.bit_length();
+            let expected = 63;
+            assert_eq!(actual, expected);
+        }
+
+        // u128::MAX = 128
+        {
+            let decimal = Decimal::new(u128::MAX, 2, false);
+            let actual = decimal.bit_length();
+            let expected = 128;
             assert_eq!(actual, expected);
         }
     }
@@ -505,8 +784,7 @@ mod test {
             negative: false,
         };
 
-        assert_eq!({ actual.value }, { expected.value });
-        assert_eq!(actual.scale, expected.scale);
+        assert_eq!(actual, expected);
     }
 
     #[test]
@@ -520,8 +798,7 @@ mod test {
             negative: false,
         };
 
-        assert_eq!({ actual.value }, { expected.value });
-        assert_eq!(actual.scale, expected.scale);
+        assert_eq!(actual, expected);
     }
 
     #[test]

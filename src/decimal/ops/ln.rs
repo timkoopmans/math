@@ -1,13 +1,13 @@
 use crate::decimal::ops::{Div, Log2};
 use crate::decimal::{Decimal, COMPUTE_SCALE};
-use crate::decimal::errors::DecimalError;
+use crate::decimal::errors::ErrorCode;
 
 pub trait Ln<T>: Sized {
-    fn ln(self) -> Result<Self, DecimalError>;
+    fn ln(self) -> Result<Self, ErrorCode>;
 }
 
 impl Ln<Decimal> for Decimal {
-    fn ln(self) -> Result<Self, DecimalError> {
+    fn ln(self) -> Result<Self, ErrorCode> {
         let log2_x = self.to_compute_scale().log2().expect("log_2");
 
         // 1.4426950408889634073599246810018921374266459541529859341354494069
@@ -25,7 +25,7 @@ mod tests {
     use proptest::prelude::*;
 
     #[test]
-    fn test_ln() {
+    fn test_log_e() {
         //  with integer and fractional digits
         // ln(2.25) = 0.8109302162163287639560262309286982731439808469249883952280
         {

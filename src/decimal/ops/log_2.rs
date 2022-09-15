@@ -1,12 +1,12 @@
 use crate::decimal::{Decimal, COMPUTE_SCALE};
-use crate::decimal::errors::DecimalError;
+use crate::decimal::errors::ErrorCode;
 
 pub trait Log2<T>: Sized {
-    fn log2(self) -> Result<Self, DecimalError>;
+    fn log2(self) -> Result<Self, ErrorCode>;
 }
 
 impl Log2<Decimal> for Decimal {
-    fn log2(self) -> Result<Self, DecimalError> {
+    fn log2(self) -> Result<Self, ErrorCode> {
         let mut x: u128 = self.value;
 
         assert!(x > 0, "must be greater than zero");

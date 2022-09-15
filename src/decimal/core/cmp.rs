@@ -1,13 +1,13 @@
 use crate::decimal::Decimal;
-use crate::decimal::errors::DecimalError;
+use crate::decimal::errors::ErrorCode;
 
 pub trait Compare<T>: Sized {
-    fn eq(self, rhs: T) -> Result<bool, DecimalError>;
-    fn almost_eq(self, rhs: T, precision: u128) -> Result<bool, DecimalError>;
-    fn lt(self, rhs: T) -> Result<bool, DecimalError>;
-    fn gt(self, rhs: T) -> Result<bool, DecimalError>;
-    fn gte(self, rhs: T) -> Result<bool, DecimalError>;
-    fn lte(self, rhs: T) -> Result<bool, DecimalError>;
+    fn eq(self, rhs: T) -> Result<bool, ErrorCode>;
+    fn almost_eq(self, rhs: T, precision: u128) -> Result<bool, ErrorCode>;
+    fn lt(self, rhs: T) -> Result<bool, ErrorCode>;
+    fn gt(self, rhs: T) -> Result<bool, ErrorCode>;
+    fn gte(self, rhs: T) -> Result<bool, ErrorCode>;
+    fn lte(self, rhs: T) -> Result<bool, ErrorCode>;
     fn min(self, rhs: T) -> Self;
     fn max(self, rhs: T) -> Self;
 }
@@ -15,24 +15,24 @@ pub trait Compare<T>: Sized {
 /// Compare two [Decimal] values/scale with comparison query operators.
 impl Compare<Decimal> for Decimal {
     /// Show if two [Decimal] values equal each other
-    fn eq(self, other: Decimal) -> Result<bool, DecimalError> {
+    fn eq(self, other: Decimal) -> Result<bool, ErrorCode> {
         if self.scale != other.scale {
-            Err(DecimalError::DifferentScale)
+            Err(ErrorCode::DifferentScale)
         } else {
             Ok(self.value == other.value && self.negative == other.negative)
         }
     }
 
     /// Show if two [Decimal] values are almost equal to each other, given a precision
-    fn almost_eq(self, other: Decimal, precision: u128) -> Result<bool, DecimalError> {
+    fn almost_eq(self, other: Decimal, precision: u128) -> Result<bool, ErrorCode> {
         let difference = self.value.saturating_sub(other.value);
         Ok(difference.lt(&precision))
     }
 
     /// Show if one [Decimal] value is less than another.
-    fn lt(self, other: Decimal) -> Result<bool, DecimalError> {
+    fn lt(self, other: Decimal) -> Result<bool, ErrorCode> {
         if self.scale != other.scale {
-            Err(DecimalError::DifferentScale)
+            Err(ErrorCode::DifferentScale)
         } else if self.negative && other.negative {
             Ok(self.value > other.value)
         } else if self.negative && !other.negative {
@@ -45,9 +45,9 @@ impl Compare<Decimal> for Decimal {
     }
 
     /// Show if one [Decimal] value is greater than another.
-    fn gt(self, other: Decimal) -> Result<bool, DecimalError> {
+    fn gt(self, other: Decimal) -> Result<bool, ErrorCode> {
         if self.scale != other.scale {
-            Err(DecimalError::DifferentScale)
+            Err(ErrorCode::DifferentScale)
         } else if self.negative && other.negative {
             Ok(self.value < other.value)
         } else if self.negative && !other.negative {
@@ -60,9 +60,9 @@ impl Compare<Decimal> for Decimal {
     }
 
     /// Show if one [Decimal] value is greater than or equal to another.
-    fn gte(self, other: Decimal) -> Result<bool, DecimalError> {
+    fn gte(self, other: Decimal) -> Result<bool, ErrorCode> {
         if self.scale != other.scale {
-            Err(DecimalError::DifferentScale)
+            Err(ErrorCode::DifferentScale)
         } else if self.negative && other.negative {
             Ok(self.value <= other.value)
         } else if self.negative && !other.negative {
@@ -75,9 +75,9 @@ impl Compare<Decimal> for Decimal {
     }
 
     /// Show if one [Decimal] value is less than or equal to another.
-    fn lte(self, other: Decimal) -> Result<bool, DecimalError> {
+    fn lte(self, other: Decimal) -> Result<bool, ErrorCode> {
         if self.scale != other.scale {
-            Err(DecimalError::DifferentScale)
+            Err(ErrorCode::DifferentScale)
         } else if self.negative && other.negative {
             Ok(self.value >= other.value)
         } else if self.negative && !other.negative {

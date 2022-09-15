@@ -1,4 +1,4 @@
-use crate::decimal::core::uint::U256;
+use crate::decimal::core::uint::U192;
 use crate::decimal::Decimal;
 
 pub trait BigMul<T>: Sized {
@@ -9,13 +9,13 @@ pub trait BigMul<T>: Sized {
 /// converting its value to and from a u256 in order to support ranges > u128.
 impl BigMul<Decimal> for Decimal {
     fn big_mul(self, rhs: Decimal) -> Self {
-        let lhs = U256::try_from(self.value)
+        let lhs = U192::try_from(self.value)
             .unwrap_or_else(|_| panic!("decimal: lhs value does not fit in Decimal::big_mul()"));
-        let denominator = U256::try_from(rhs.denominator()).unwrap_or_else(|_| {
+        let denominator = U192::try_from(rhs.denominator()).unwrap_or_else(|_| {
             panic!("decimal: denominator value does not fit in Decimal::big_mul()")
         });
         let negative = self.negative != rhs.negative;
-        let rhs = U256::try_from(rhs.value)
+        let rhs = U192::try_from(rhs.value)
             .unwrap_or_else(|_| panic!("decimal: rhs value does not fit in Decimal::big_mul()"));
 
         let result = lhs

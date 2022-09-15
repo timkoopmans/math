@@ -1,13 +1,13 @@
 use crate::decimal::ops::{Div, Log2};
 use crate::decimal::{Decimal, COMPUTE_SCALE};
-use crate::decimal::errors::DecimalError;
+use crate::decimal::errors::ErrorCode;
 
 pub trait Log10<T>: Sized {
-    fn log10(self) -> Result<Self, DecimalError>;
+    fn log10(self) -> Result<Self, ErrorCode>;
 }
 
 impl Log10<Decimal> for Decimal {
-    fn log10(self) -> Result<Self, DecimalError> {
+    fn log10(self) -> Result<Self, ErrorCode> {
         let scale = self.scale;
         let x = self.to_compute_scale();
         let x_scale = 10u128.checked_pow(COMPUTE_SCALE as u32).expect("scale");
