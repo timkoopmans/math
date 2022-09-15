@@ -1,16 +1,17 @@
-use crate::decimal::Decimal;
-use crate::decimal::errors::DecimalError;
+use crate::decimal::core::uint::U192;
+use crate::decimal::{BigDecimal, Decimal};
+use crate::decimal::errors::ErrorCode;
 use std::cmp::Ordering;
 
 pub trait Add<T>: Sized {
-    fn add(self, rhs: T) -> Result<Self, DecimalError>;
+    fn add(self, rhs: T) -> Result<Self, ErrorCode>;
 }
 
 /// Add another [Decimal] value to itself, including signed addition.
 impl Add<Decimal> for Decimal {
-    fn add(self, rhs: Decimal) -> Result<Self, DecimalError> {
+    fn add(self, rhs: Decimal) -> Result<Self, ErrorCode> {
         if self.scale != rhs.scale {
-            Err(DecimalError::DifferentScale)
+            Err(ErrorCode::DifferentScale)
         } else if self.negative == rhs.negative {
             // covers when both positive, and both negative.
             // just add the add absolute values and use common sign
@@ -57,6 +58,60 @@ impl Add<Decimal> for Decimal {
     }
 }
 
+/// Add another [BigDecimal] value to itself, including signed addition.
+impl Add<BigDecimal> for BigDecimal {
+    fn add(self, rhs: BigDecimal) -> Result<Self, ErrorCode> {
+        if self.scale != rhs.scale {
+            Err(ErrorCode::DifferentScale)
+        } else if self.negative == rhs.negative {
+            // covers when both positive, and both negative.
+            // just add the add absolute values and use common sign
+            // e.g: (-4) + (-3) = -7 ; 4 + 3 = 7;
+            Ok(Self {
+                value: self.value.checked_add(rhs.value).unwrap_or_else(|| {
+                    panic!("decimal: checked_add overflow in method BigDecimal::add()")
+                }),
+                scale: self.scale,
+                negative: self.negative,
+            })
+        } else {
+            // if different signs value is the difference of absolute values.
+            // (so need to know which has bigger absolute value)
+            // sign is the sign of the one with bigger absolute value
+            match self.value.cmp(&rhs.value) {
+                Ordering::Greater => {
+                    // e.g: 4 + (-3) = 1 ; -4 + 3 = -1;
+                    Ok(Self {
+                        value: self.value.checked_sub(rhs.value).unwrap_or_else(|| {
+                            panic!("decimal: checked_sub overflow in method BigDecimal::add()")
+                        }),
+                        scale: self.scale,
+                        negative: self.negative,
+                    })
+                }
+                Ordering::Less => {
+                    // e.g: 2 + (-5) = -3 ; -2 + 5 = 3;
+                    Ok(Self {
+                        value: rhs.value.checked_sub(self.value).unwrap_or_else(|| {
+                            panic!("decimal: checked_sub overflow in method BigDecimal::add()")
+                        }),
+                        scale: self.scale,
+                        negative: rhs.negative,
+                    })
+                }
+                Ordering::Equal => {
+                    // if equal abs value and opposite sign then result is zero
+                    Ok(Self {
+                        value: U192::from(0),
+                        scale: self.scale,
+                        negative: false,
+                    })
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::decimal::ops::Add;
@@ -73,7 +128,7 @@ mod test {
             assert!(actual.is_err());
             assert!(matches!(
                 actual,
-                Err(crate::decimal::errors::DecimalError::DifferentScale)
+                Err(crate::decimal::errors::ErrorCode::DifferentScale)
             ));
         }
 

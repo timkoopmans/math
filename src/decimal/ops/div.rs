@@ -1,4 +1,4 @@
-use crate::decimal::Decimal;
+use crate::decimal::{BigDecimal, Decimal};
 
 pub trait Div<T>: Sized {
     fn div(self, rhs: T) -> Self;
@@ -22,10 +22,31 @@ impl Div<Decimal> for Decimal {
     }
 }
 
+/// Divide a [BigDecimal] over another [BigDecimal], including signed division.
+impl Div<BigDecimal> for BigDecimal {
+    fn div(self, rhs: BigDecimal) -> Self {
+        Self {
+            value: self
+                .value
+                .checked_mul(rhs.denominator())
+                .unwrap_or_else(|| {
+                    panic!("decimal: overflow in method BigDecimal::div().checked_mul")
+                })
+                .checked_div(rhs.value)
+                .unwrap_or_else(|| {
+                    panic!("decimal: overflow in method BigDecimal::div().checked_div")
+                }),
+            scale: self.scale,
+            negative: self.negative != rhs.negative,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
+    use crate::decimal::core::uint::U192;
     use crate::decimal::ops::Div;
-    use crate::decimal::Decimal;
+    use crate::decimal::{BigDecimal, Decimal};
 
     #[test]
     fn test_div() {
@@ -88,5 +109,24 @@ mod test {
         let a = Decimal::new(10, 3, false);
         let b = Decimal::new(0, 1, false);
         a.div(b);
+    }
+
+    #[test]
+    fn test_div_192() {
+        {
+            // test: 340282366920938463426481119284349108225
+            // / 18446744073709551615
+            // = 18446744073709551615
+            let a = BigDecimal::new(
+                U192([1, u64::MAX.checked_sub(1).expect("u64::MAX"), 0]),
+                0,
+                false,
+            );
+            let b = BigDecimal::new(U192::from(u64::MAX), 0, false);
+            let actual = a.div(b);
+            let expected = BigDecimal::new(U192::from(u64::MAX), 0, false);
+
+            assert_eq!(actual, expected);
+        }
     }
 }

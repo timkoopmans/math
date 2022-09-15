@@ -1,49 +1,61 @@
-use crate::decimal::core::uint::U256;
-use crate::decimal::core::Compare;
-use crate::decimal::Decimal;
-use crate::decimal::errors::DecimalError;
+use crate::decimal::core::uint::U192;
+use crate::decimal::{BigDecimal, Decimal};
+use crate::decimal::errors::ErrorCode;
 
 pub trait Sqrt<T>: Sized {
-    fn sqrt(self) -> Result<Self, DecimalError>;
+    fn sqrt(self) -> Result<Self, ErrorCode>;
 }
 
-/// Calculate the square root of a [Decimal] value. For full algorithm please refer to:
-/// https://docs.google.com/spreadsheets/d/1dw7HaR_YsgvT7iA_4kv2rgWb-EvSyQGM/edit#gid=432909162
+/// Calculate the square root of a [Decimal] value.
 impl Sqrt<Decimal> for Decimal {
-    fn sqrt(self) -> Result<Self, DecimalError> {
-        let zero = Decimal::new(0, self.scale, false);
-        let one = Decimal::from_u128(1).to_scale(self.scale);
+    fn sqrt(self) -> Result<Self, ErrorCode> {
+        let big_decimal: BigDecimal = self.into();
 
-        if self.eq(zero).unwrap() || self.eq(one).unwrap() {
+        // Note: we always use BigDecimal.sqrt() method for Decimal to
+        // avoid arithmetic overflow of u128 internal value
+        let big_sqrt = big_decimal.sqrt().expect("big_sqrt");
+
+        Ok(big_sqrt.into())
+    }
+}
+
+/// Calculate the square root of a [BigDecimal] value.
+impl Sqrt<BigDecimal> for BigDecimal {
+    fn sqrt(self) -> Result<BigDecimal, ErrorCode> {
+        let zero = BigDecimal::new(U192::from(0u64), self.scale, false);
+        let one = BigDecimal::new(
+            U192::from(1u64)
+                .checked_mul(self.denominator())
+                .expect("one scaled"),
+            self.scale,
+            false,
+        );
+
+        if self.eq(&zero) || self.eq(&one) {
             return Ok(self);
         }
 
-        let value = U256::try_from(self.value)
-            .unwrap_or_else(|_| panic!("decimal: rhs value does not fit in Decimal::sqrt()"));
-        let denominator = U256::try_from(self.denominator()).unwrap_or_else(|_| {
-            panic!("decimal: denominator value does not fit in Decimal::sqrt()")
-        });
+        let value = self.value;
+        let denominator = self.denominator();
+
+        // we double the precision by scaling out on itself
         let value_scaled = match value.checked_mul(denominator) {
             Some(x) => x,
-            None => return Err(DecimalError::ExceedsPrecisionRange),
+            None => return Err(ErrorCode::ExceedsPrecisionRange),
         };
-        let value_scaled_bit_length = 256u32
+
+        let bit_length = 192u32
             .checked_sub(value_scaled.leading_zeros())
             .expect("bit_length");
-        let value_scaled_mid_length = U256::try_from(
-            value_scaled_bit_length
-                .checked_div(2)
-                .expect("value_scaled_mid_length"),
-        )
-        .unwrap();
-        let value_approx = U256::try_from(2u128)
-            .unwrap()
-            .checked_pow(value_scaled_mid_length)
-            .expect("value_approx");
-        let mut y = value_scaled.checked_div(value_approx).expect("y");
-        let mut y_0 = U256::try_from(0u128).unwrap();
-        let y_1 = U256::try_from(1u128).unwrap();
-        let threshold = U256::try_from(1u128).unwrap();
+
+        let mid_length = U192::from(bit_length.checked_div(2).expect("mid_length"));
+
+        let approx = U192::from(2u128).checked_pow(mid_length).expect("approx");
+
+        let mut y = value_scaled.checked_div(approx).expect("y");
+        let mut y_0 = U192::from(0u128);
+        let y_1 = U192::from(1u128);
+        let threshold = U192::from(1u128);
 
         loop {
             if y.gt(&y_0) && (y.checked_sub(y_0).unwrap()).gt(&threshold)
@@ -58,13 +70,7 @@ impl Sqrt<Decimal> for Decimal {
             }
         }
 
-        Ok(Self {
-            value: y.try_into().unwrap_or_else(|_| {
-                panic!("decimal: overflow in method Decimal::sqrt() casting to u128")
-            }),
-            scale: self.scale,
-            negative: self.negative,
-        })
+        Ok(BigDecimal::new(y, self.scale, self.negative))
     }
 }
 
@@ -134,10 +140,10 @@ mod test {
     proptest! {
         #[test]
         fn test_full_u64_range_sqrt(
-            lhs in 1_000_000..u64::MAX, // 1.000000 .. 18,446,744,073,709.551615
+            lhs in 1_000_000..u64::MAX, // 1.000000000 .. 18,446,744,073.709551615
         ) {
-            let scale = 6; // decimal places
-            let precision = 2; // accuracy +/- 0.000001
+            let scale = 9; // decimal places
+            let precision = 2; // accuracy +/- 0.000000001
             let lhs_decimal = Decimal::from_scaled_amount(lhs, scale);
             let lhs_f64: f64 = lhs_decimal.into();
             let den_f64: f64 = lhs_decimal.denominator() as f64;

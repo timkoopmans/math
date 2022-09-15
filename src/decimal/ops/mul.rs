@@ -1,4 +1,4 @@
-use crate::decimal::Decimal;
+use crate::decimal::{BigDecimal, Decimal};
 
 pub trait Mul<T>: Sized {
     fn mul(self, rhs: T) -> Self;
@@ -14,7 +14,7 @@ impl Mul<Decimal> for Decimal {
                 .unwrap_or_else(|| panic!("decimal: overflow in method Decimal::mul().checked_mul"))
                 .checked_div(rhs.denominator())
                 .unwrap_or_else(|| {
-                    panic!("decimal: overflow in method Decimal::mul().checked_mul")
+                    panic!("decimal: overflow in method Decimal::mul().checked_div")
                 }),
             scale: self.scale,
             negative: self.negative != rhs.negative,
@@ -35,10 +35,31 @@ impl Mul<u128> for Decimal {
     }
 }
 
+/// Multiply another [BigDecimal] value against itself, including signed multiplication.
+impl Mul<BigDecimal> for BigDecimal {
+    fn mul(self, rhs: BigDecimal) -> Self {
+        Self {
+            value: self
+                .value
+                .checked_mul(rhs.value)
+                .unwrap_or_else(|| {
+                    panic!("decimal: overflow in method BigDecimal::mul().checked_mul")
+                })
+                .checked_div(self.denominator())
+                .unwrap_or_else(|| {
+                    panic!("decimal: overflow in method BigDecimal::mul().checked_div")
+                }),
+            scale: self.scale,
+            negative: self.negative != rhs.negative,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
+    use crate::decimal::core::uint::U192;
     use crate::decimal::ops::Mul;
-    use crate::decimal::Decimal;
+    use crate::decimal::{BigDecimal, Decimal};
 
     #[test]
     fn test_mul_decimal() {
@@ -116,5 +137,24 @@ mod test {
         let a = Decimal::new(u128::MAX, 2, false);
         let b = 2;
         a.mul(b);
+    }
+
+    #[test]
+    fn test_mul_u192() {
+        {
+            // test: 18446744073709551615 * 18446744073709551615
+            // = 340282366920938463426481119284349108225
+            let a = BigDecimal::new(U192::from(u64::MAX), 0, false);
+            let b = BigDecimal::new(U192::from(u64::MAX), 0, false);
+
+            let actual = a.mul(b);
+            let expected = BigDecimal::new(
+                U192([1, u64::MAX.checked_sub(1).expect("u64::MAX"), 0]),
+                0,
+                false,
+            );
+
+            assert_eq!(actual, expected);
+        }
     }
 }

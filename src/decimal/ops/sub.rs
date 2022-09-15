@@ -1,16 +1,28 @@
 use crate::decimal::ops::Add;
-use crate::decimal::Decimal;
-use crate::decimal::errors::DecimalError;
+use crate::decimal::{BigDecimal, Decimal};
+use crate::decimal::errors::ErrorCode;
 
 pub trait Sub<T>: Sized {
-    fn sub(self, rhs: T) -> Result<Self, DecimalError>;
+    fn sub(self, rhs: T) -> Result<Self, ErrorCode>;
 }
 
 /// Subtract another [Decimal] value from itself, including signed subtraction.
 impl Sub<Decimal> for Decimal {
-    fn sub(self, rhs: Decimal) -> Result<Self, DecimalError> {
+    fn sub(self, rhs: Decimal) -> Result<Self, ErrorCode> {
         // as a - b is always a + (-b) so we let add handle it
         let new_rhs = Decimal {
+            negative: !rhs.negative,
+            ..rhs
+        };
+        self.add(new_rhs)
+    }
+}
+
+/// Subtract another [BigDecimal] value from itself, including signed subtraction.
+impl Sub<BigDecimal> for BigDecimal {
+    fn sub(self, rhs: BigDecimal) -> Result<Self, ErrorCode> {
+        // as a - b is always a + (-b) so we let add handle it
+        let new_rhs = BigDecimal {
             negative: !rhs.negative,
             ..rhs
         };
@@ -34,7 +46,7 @@ mod test {
             assert!(actual.is_err());
             assert!(matches!(
                 actual,
-                Err(crate::decimal::errors::DecimalError::DifferentScale)
+                Err(crate::decimal::errors::ErrorCode::DifferentScale)
             ));
         }
 
